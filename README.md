@@ -20,6 +20,8 @@ Options:
           Command to run after freezing the screen
       --after-freeze-timeout <AFTER_FREEZE_TIMEOUT>
           Amount of milliseconds to wait between freezing the screen and running after-freeze-cmd
+      --enable-keyboard
+          To enable keyboard input when freezing the screen
   -h, --help
           Print help
   -V, --version

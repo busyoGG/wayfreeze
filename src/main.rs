@@ -96,6 +96,7 @@ struct AppData {
     outputs_ready: i32,
     output_count: i32,
     exit: bool,
+    enable_keyboard: bool,
 }
 
 impl Dispatch<wl_registry::WlRegistry, ()> for AppData {
@@ -789,6 +790,7 @@ impl ScreenFreezer {
         after_cmd: String,
         before_timeout: u64,
         after_timeout: u64,
+        enable_keyboard: bool,
     ) -> Result<Self, Box<dyn Error>> {
         let connection = Connection::connect_to_env().unwrap();
         let mut event_queue = connection.new_event_queue();
@@ -801,6 +803,7 @@ impl ScreenFreezer {
         state.after_cmd = after_cmd;
         state.before_timeout = before_timeout;
         state.after_timeout = after_timeout;
+        state.enable_keyboard = enable_keyboard;
 
         event_queue.roundtrip(&mut state).unwrap();
         info!("> Received all globals");
@@ -944,7 +947,10 @@ impl ScreenFreezer {
             // configure layer surface
             ls.set_anchor(Anchor::Top | Anchor::Right | Anchor::Bottom | Anchor::Left);
             ls.set_exclusive_zone(-1); // extend surface to anchored edges
-            ls.set_keyboard_interactivity(KeyboardInteractivity::Exclusive);
+
+            if !self.state.enable_keyboard {
+                ls.set_keyboard_interactivity(KeyboardInteractivity::Exclusive);
+            }
 
             vec_insert(&mut self.state.layer_surfaces, i, ls);
         }
@@ -1018,6 +1024,9 @@ struct Args {
     /// Amount of milliseconds to wait between freezing the screen and running after-freeze-cmd.
     #[arg(long, hide_default_value = true, required = false, default_value_t = 0)]
     after_freeze_timeout: u64,
+    /// Enable keyboard
+    #[arg(long, required = false, default_value_t = false)]
+    enable_keyboard: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -1031,6 +1040,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.after_freeze_cmd,
         args.before_freeze_timeout,
         args.after_freeze_timeout,
+        args.enable_keyboard,
     ) {
         Ok(mut sf) => sf.freeze().unwrap(),
         Err(e) => panic!("Could not create ScreenFreezer: {}", e),
